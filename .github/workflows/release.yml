@@ -1,0 +1,35 @@
+name: Publish to Foundry Package Listing
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Foundry Package Release API
+        env:
+          FOUNDRY_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+        run: |
+          curl -f -X POST "https://foundryvtt.com/_api/packages/release_version/" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${FOUNDRY_TOKEN}" \
+            -d @- <<EOF
+          {
+            "id": "skywall-tower-shield-fix",
+            "release": {
+              "version": "${{ steps.version.outputs.version }}",
+              "manifest": "https://github.com/InportantMageKing/skywall-tower-shield-fix/releases/download/${GITHUB_REF_NAME}/module.json",
+              "notes": "https://github.com/InportantMageKing/skywall-tower-shield-fix/releases/tag/${GITHUB_REF_NAME}",
+              "compatibility": {
+                "minimum": "13",
+                "verified": "14"
+              }
+            }
+          }
+          EOF
